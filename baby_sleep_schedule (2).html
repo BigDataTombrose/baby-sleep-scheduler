@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d1117">
+<title>Baby Sleep</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2333;
+    --border: rgba(255,255,255,0.07);
+    --text: #e6edf3;
+    --text-muted: #7d8590;
+    --accent: #58a6ff;
+    --accent2: #bc8cff;
+    --nap1: #c9b8ff;
+    --nap2: #7c6fe0;
+    --awake1: #1f3a5f;
+    --awake2: #1a3a6e;
+    --awake3: #1e4080;
+    --warn-bg: #2d1f00;
+    --warn-border: #9e6a03;
+    --warn-text: #e3b341;
+    --moon: #f0d060;
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
+  }
+
+  body {
+    min-height: 100dvh;
+    padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+  }
+
+  .app {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 0 40px;
+  }
+
+  /* Header */
+  .header {
+    padding: 52px 24px 20px;
+    background: linear-gradient(180deg, #0d1117 0%, transparent 100%);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: rgba(13,17,23,0.85);
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+
+  .header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    font-weight: 400;
+    color: var(--text);
+    line-height: 1.1;
+  }
+
+  .header h1 em {
+    font-style: italic;
+    color: var(--accent2);
+  }
+
+  .moon-icon {
+    font-size: 28px;
+    line-height: 1;
+    filter: drop-shadow(0 0 8px rgba(240,208,96,0.4));
+  }
+
+  /* Section labels */
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 0 24px;
+    margin: 24px 0 10px;
+  }
+
+  /* Controls card */
+  .controls-card {
+    margin: 0 16px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .control-row {
+    display: flex;
+    align-items: center;
+    padding: 14px 18px;
+    gap: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .control-row:last-child { border-bottom: none; }
+
+  .control-icon {
+    font-size: 18px;
+    width: 28px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .control-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .control-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+
+  .control-value {
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .control-value .ratio-sep {
+    color: var(--text-muted);
+    font-weight: 300;
+    margin: 0 2px;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 130px;
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    outline: none;
+    flex-shrink: 0;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 3px rgba(88,166,255,0.2);
+    cursor: pointer;
+  }
+
+  #napSlider::-webkit-slider-thumb { background: var(--accent2); box-shadow: 0 0 0 3px rgba(188,140,255,0.2); }
+
+  /* Warning */
+  .warn {
+    margin: 12px 16px 0;
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-border);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--warn-text);
+    display: none;
+  }
+
+  /* Timeline */
+  .timeline-wrap {
+    margin: 0 16px;
+  }
+
+  .tl-bar {
+    height: 52px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    display: flex;
+    border: 1px solid var(--border);
+  }
+
+  .tl-seg {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    overflow: hidden;
+    white-space: nowrap;
+    transition: width 0.25s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .tl-times {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    position: relative;
+    height: 18px;
+  }
+
+  .tl-time {
+    position: absolute;
+    font-size: 10px;
+    color: var(--text-muted);
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+
+  /* Schedule list */
+  .schedule-card {
+    margin: 0 16px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .srow {
+    display: flex;
+    align-items: center;
+    padding: 13px 18px;
+    border-bottom: 1px solid var(--border);
+    gap: 14px;
+  }
+
+  .srow:last-child { border-bottom: none; }
+
+  .srow-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .srow-body { flex: 1; min-width: 0; }
+
+  .srow-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 1px;
+  }
+
+  .srow-time {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .srow-dur {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .srow-dur.purple { color: var(--accent2); }
+  .srow-dur.muted { color: var(--text-muted); }
+
+  /* Summary cards */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 0 16px;
+  }
+
+  .summary-card {
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+  }
+
+  .summary-card.wide {
+    grid-column: span 2;
+  }
+
+  .sc-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .sc-val {
+    font-size: 22px;
+    font-weight: 300;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    font-family: 'DM Serif Display', serif;
+  }
+
+  .sc-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 3px;
+  }
+
+  .sc-ww {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
+
+  .sc-ww-pill {
+    background: var(--surface2);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sc-ww-arrow {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  /* Night sleep bar */
+  .night-bar {
+    margin: 0 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .night-icon { font-size: 20px; }
+
+  .night-info { flex: 1; }
+
+  .night-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+
+  .night-times {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .night-dur {
+    font-family: 'DM Serif Display', serif;
+    font-size: 24px;
+    font-weight: 400;
+    color: var(--moon);
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 32px 24px 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+    opacity: 0.5;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="header-inner">
+      <h1>Baby<br><em>Sleep</em></h1>
+      <div class="moon-icon">🌙</div>
+    </div>
+  </div>
+
+  <div class="section-label">Settings</div>
+
+  <div class="controls-card">
+    <div class="control-row">
+      <div class="control-icon">😴</div>
+      <div class="control-info">
+        <div class="control-label">Fell asleep last night</div>
+        <div class="control-value" id="lastSleepLabel">—</div>
+      </div>
+      <input type="range" id="lastSleepSlider" min="1020" max="1200" step="5" value="1170">
+    </div>
+    <div class="control-row">
+      <div class="control-icon">☀️</div>
+      <div class="control-info">
+        <div class="control-label">Wake-up time</div>
+        <div class="control-value" id="wakeLabel">—</div>
+      </div>
+      <input type="range" id="wakeSlider" min="300" max="420" step="5" value="330">
+    </div>
+    <div class="control-row">
+      <div class="control-icon">🌙</div>
+      <div class="control-info">
+        <div class="control-label">Target bedtime tonight</div>
+        <div class="control-value" id="bedLabel">—</div>
+      </div>
+      <input type="range" id="bedSlider" min="1080" max="1200" step="5" value="1170">
+    </div>
+    <div class="control-row">
+      <div class="control-icon">⏱️</div>
+      <div class="control-info">
+        <div class="control-label">Total sleep goal</div>
+        <div class="control-value" id="totalSleepLabel">—</div>
+      </div>
+      <input type="range" id="totalSleepSlider" min="660" max="840" step="15" value="750">
+    </div>
+    <div class="control-row">
+      <div class="control-icon">💤</div>
+      <div class="control-info">
+        <div class="control-label">Nap ratio</div>
+        <div class="control-value" id="napLabel">—</div>
+      </div>
+      <input type="range" id="napSlider" min="15" max="45" step="5" value="30">
+    </div>
+  </div>
+
+  <div id="warnBox" class="warn">⚠️ No valid schedule for these settings. Try adjusting the sliders.</div>
+
+  <div id="mainContent">
+    <div class="section-label">Today's Timeline</div>
+    <div class="timeline-wrap">
+      <div class="tl-bar" id="tlBar"></div>
+      <div class="tl-times" id="tlTimes"></div>
+    </div>
+
+    <div class="section-label">Schedule</div>
+    <div class="schedule-card" id="scheduleCard"></div>
+
+    <div class="section-label">Summary</div>
+    <div id="nightBarWrap"></div>
+    <div style="height:10px"></div>
+    <div class="summary-grid" id="summaryGrid"></div>
+  </div>
+
+  <div class="footer">2 naps · increasing wake windows</div>
+</div>
+
+<script>
+const MAX_WAKE_WIN = 4 * 60 + 15;
+
+function fmt(mins) {
+  const h = Math.floor(mins / 60) % 24;
+  const m = mins % 60;
+  const suffix = h < 12 ? 'am' : 'pm';
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return m === 0 ? `${h12}:00 ${suffix}` : `${h12}:${String(m).padStart(2,'0')} ${suffix}`;
+}
+
+function fmtDur(mins) {
+  if (mins < 60) return `${mins}m`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
+}
+
+function compute(wakeMins, bedtime, nap1Frac, totalSleep, lastSleepMins) {
+  const nightSleep = (wakeMins + 24 * 60 - lastSleepMins) % (24 * 60);
+  const daySleep = totalSleep - nightSleep;
+  const awakeTime = (bedtime - wakeMins) - daySleep;
+
+  if (daySleep <= 0 || awakeTime <= 0) return null;
+
+  const nap1 = Math.round(daySleep * nap1Frac / 5) * 5;
+  const nap2 = daySleep - nap1;
+  if (nap1 >= nap2 || nap1 < 15 || nap2 < 20) return null;
+
+  let best = null, bestScore = Infinity;
+
+  for (let r2 = 1.10; r2 <= 1.70; r2 += 0.05) {
+    for (let r3 = r2 + 0.10; r3 <= 2.40; r3 += 0.05) {
+      const sumR = 1 + r2 + r3;
+      const ww1 = Math.round(awakeTime / sumR / 5) * 5;
+      const ww2 = Math.round(awakeTime * r2 / sumR / 5) * 5;
+      const ww3 = awakeTime - ww1 - ww2;
+
+      if (ww1 < 45 || ww2 < 45 || ww3 < 45) continue;
+      if (ww1 >= ww2 || ww2 >= ww3) continue;
+      if (ww1 > MAX_WAKE_WIN || ww2 > MAX_WAKE_WIN || ww3 > MAX_WAKE_WIN) continue;
+
+      const nap1Start = wakeMins + ww1;
+      const nap2Start = nap1Start + nap1 + ww2;
+      const nap2End   = nap2Start + nap2;
+      if (Math.abs(nap2End + ww3 - bedtime) > 4) continue;
+      if (nap2End >= bedtime) continue;
+
+      const score = Math.abs((ww2 - ww1) - (ww3 - ww2));
+      if (score < bestScore) {
+        bestScore = score;
+        best = { nap1Start, nap1End: nap1Start + nap1, nap2Start, nap2End, nap1, nap2, ww1, ww2, ww3, nightSleep, lastSleepMins };
+      }
+    }
+  }
+  return best;
+}
+
+function render() {
+  const wm        = parseInt(document.getElementById('wakeSlider').value);
+  const bed       = parseInt(document.getElementById('bedSlider').value);
+  const lastSleep = parseInt(document.getElementById('lastSleepSlider').value);
+  const pct       = parseInt(document.getElementById('napSlider').value);
+  const totalMins = parseInt(document.getElementById('totalSleepSlider').value);
+
+  document.getElementById('wakeLabel').textContent      = fmt(wm);
+  document.getElementById('bedLabel').textContent       = fmt(bed);
+  document.getElementById('lastSleepLabel').textContent = fmt(lastSleep);
+  document.getElementById('totalSleepLabel').textContent = fmtDur(totalMins);
+  document.getElementById('napLabel').innerHTML =
+    `<span style="color:var(--nap1);font-weight:600">${pct}</span><span class="ratio-sep"> / </span><span style="color:var(--nap2);font-weight:600">${100-pct}</span>`;
+
+  const s = compute(wm, bed, pct / 100, totalMins, lastSleep);
+  const warn = document.getElementById('warnBox');
+  const main = document.getElementById('mainContent');
+
+  if (!s) {
+    warn.style.display = 'block';
+    main.style.display = 'none';
+    return;
+  }
+  warn.style.display = 'none';
+  main.style.display = 'block';
+
+  const { nap1Start, nap1End, nap2Start, nap2End, nap1, nap2, ww1, ww2, ww3, nightSleep, lastSleepMins } = s;
+  const span = bed - wm;
+
+  // Timeline
+  const segs = [
+    { start: wm,       end: nap1Start, label: 'awake', bg: '#1a3a6e', tc: '#7ab3e8' },
+    { start: nap1Start,end: nap1End,   label: 'nap 1', bg: '#3a2f6b', tc: '#c9b8ff' },
+    { start: nap1End,  end: nap2Start, label: 'awake', bg: '#1e3f7a', tc: '#7ab3e8' },
+    { start: nap2Start,end: nap2End,   label: 'nap 2', bg: '#4a35a8', tc: '#d4c8ff' },
+    { start: nap2End,  end: bed,       label: 'awake', bg: '#1e4a9a', tc: '#93c5fd' },
+  ];
+
+  document.getElementById('tlBar').innerHTML = segs.map(seg => {
+    const w = ((seg.end - seg.start) / span * 100).toFixed(1);
+    return `<div class="tl-seg" style="width:${w}%;background:${seg.bg};color:${seg.tc};">${parseFloat(w) > 10 ? seg.label : ''}</div>`;
+  }).join('');
+
+  const labelTimes = [wm, nap1Start, nap1End, nap2Start, nap2End, bed];
+  document.getElementById('tlTimes').innerHTML = labelTimes.map(t => {
+    const pos = ((t - wm) / span * 100).toFixed(1);
+    return `<span class="tl-time" style="left:${pos}%">${fmt(t)}</span>`;
+  }).join('');
+
+  // Schedule rows
+  const rows = [
+    { dot: '#58a6ff', label: 'Wake up',       time: fmt(wm),                                dur: '',           durClass: 'muted' },
+    { dot: '#3a6fa8', label: 'Wake window 1', time: `${fmt(wm)} – ${fmt(nap1Start)}`,        dur: fmtDur(ww1),  durClass: 'muted' },
+    { dot: '#c9b8ff', label: 'Nap 1',         time: `${fmt(nap1Start)} – ${fmt(nap1End)}`,  dur: fmtDur(nap1), durClass: 'purple' },
+    { dot: '#4a7abf', label: 'Wake window 2', time: `${fmt(nap1End)} – ${fmt(nap2Start)}`,  dur: fmtDur(ww2),  durClass: 'muted' },
+    { dot: '#9b87ef', label: 'Nap 2',         time: `${fmt(nap2Start)} – ${fmt(nap2End)}`,  dur: fmtDur(nap2), durClass: 'purple' },
+    { dot: '#5a8fd4', label: 'Wake window 3', time: `${fmt(nap2End)} – ${fmt(bed)}`,         dur: fmtDur(ww3),  durClass: 'muted' },
+    { dot: '#58a6ff', label: 'Bedtime',       time: fmt(bed),                                dur: '',           durClass: 'muted' },
+  ];
+
+  document.getElementById('scheduleCard').innerHTML = rows.map(r =>
+    `<div class="srow">
+      <div class="srow-dot" style="background:${r.dot}"></div>
+      <div class="srow-body">
+        <div class="srow-label">${r.label}</div>
+        <div class="srow-time">${r.time}</div>
+      </div>
+      <div class="srow-dur ${r.durClass}">${r.dur}</div>
+    </div>`
+  ).join('');
+
+  // Night sleep bar
+  document.getElementById('nightBarWrap').innerHTML =
+    `<div class="night-bar" style="margin:0 16px">
+      <div class="night-icon">🌙</div>
+      <div class="night-info">
+        <div class="night-label">Night Sleep</div>
+        <div class="night-times">${fmt(lastSleepMins)} → ${fmt(wm)}</div>
+      </div>
+      <div class="night-dur">${fmtDur(nightSleep)}</div>
+    </div>`;
+
+  // Summary grid
+  const total = nightSleep + nap1 + nap2;
+  const f1 = Math.round(nap1 / (nap1+nap2) * 100);
+
+  document.getElementById('summaryGrid').innerHTML = `
+    <div class="summary-card">
+      <div class="sc-label">Nap 1</div>
+      <div class="sc-val">${fmtDur(nap1)}</div>
+      <div class="sc-sub">${f1}% of day sleep</div>
+    </div>
+    <div class="summary-card">
+      <div class="sc-label">Nap 2</div>
+      <div class="sc-val">${fmtDur(nap2)}</div>
+      <div class="sc-sub">${100-f1}% of day sleep</div>
+    </div>
+    <div class="summary-card">
+      <div class="sc-label">Total Sleep</div>
+      <div class="sc-val">${fmtDur(total)}</div>
+      <div class="sc-sub">Goal: ${fmtDur(totalMins)}</div>
+    </div>
+    <div class="summary-card">
+      <div class="sc-label">Day Sleep</div>
+      <div class="sc-val">${fmtDur(nap1+nap2)}</div>
+      <div class="sc-sub">across 2 naps</div>
+    </div>
+    <div class="summary-card wide">
+      <div class="sc-label">Wake Windows</div>
+      <div class="sc-ww">
+        <span class="sc-ww-pill">${fmtDur(ww1)}</span>
+        <span class="sc-ww-arrow">→</span>
+        <span class="sc-ww-pill">${fmtDur(ww2)}</span>
+        <span class="sc-ww-arrow">→</span>
+        <span class="sc-ww-pill">${fmtDur(ww3)}</span>
+      </div>
+      <div class="sc-sub" style="margin-top:6px">increasing through the day · max 4h 15m</div>
+    </div>
+  `;
+}
+
+['wakeSlider','bedSlider','lastSleepSlider','napSlider','totalSleepSlider'].forEach(id =>
+  document.getElementById(id).addEventListener('input', render)
+);
+render();
+</script>
+</body>
+</html>
